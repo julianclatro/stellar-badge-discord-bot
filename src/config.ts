@@ -1,0 +1,8 @@
+export const config = {
+  DISCORD_CLIENT_ID: '',
+  DISCORD_CLIENT_SECRET: '',
+  DISCORD_REDIRECT_URI: '',
+  DISCORD_BOT_TOKEN: '',
+  STELLAR_NETWORK: '',
+  BADGE_ASSET_ADDRESS: ''
+}
