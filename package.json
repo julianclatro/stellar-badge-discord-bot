@@ -20,6 +20,8 @@
     "test": "vitest"
   },
   "dependencies": {
-    "hono": "^2.7.6"
+    "discord.js": "^14.7.1",
+    "hono": "^2.7.6",
+    "stellar-wallets-kit": "github:Creit-Tech/Stellar-Wallets-Kit"
   }
 }

@@ -1,5 +1,6 @@
 import type { Context } from 'hono';
 import { config } from '../config';
+import { User } from '.';
 
 export class Discord {
   static async getOAuthUrl() {
@@ -38,5 +39,80 @@ export class Discord {
       },
     });
     return response.json();
+  }
+/**
+ * @typedef DiscordRoleMetaData
+ * @type {
+ * @property {ApplicationRoleConnectionMetadataType} Type - 	type of metadata value
+ * @property  {string} key -  name of the metadata field (1-100 characters)
+ * @property  {string} name - name of the metadata field (1-100 characters)
+ * @property  {dictionary} name_localizations?: 
+ * @property  {string} description
+ * @property  {dictionary} description_localizations
+ * @property {string} id - an ID.
+ * @property {string} name - your name.
+ * @property {number} age - your age.
+ */
+/*FIELD	TYPE	DESCRIPTION
+type	ApplicationRoleConnectionMetadataType	type of metadata value
+key	string	dictionary key for the metadata field (must be a-z, 0-9, or _ characters; 1-50 characters)
+name	string	name of the metadata field (1-100 characters)
+name_localizations?	dictionary with keys in available locales	translations of the name
+description	string	description of the metadata field (1-200 characters)
+description_localizations?	dictionary with keys in available locales	translations of the description*/
+
+  static async pushMetadata(
+    discord_user_id: string,
+    data: any, // inside the data object goes the refresh_token, TODO
+    metadata: Record<string, string>,
+    ctx: Context
+  ) {
+
+    console.log('Pushing metadata to discord')
+    // GET/PUT /users/@me/applications/:id/role-connection
+    const url = `https://discord.com/api/v10/users/@me/applications/${config.DISCORD_CLIENT_ID}/role-connection`;
+    // const accessToken = await getAccessToken(discord_user_id, data);
+    const { access_token: accessToken } = await User.findOne('discord_user_id', discord_user_id, ctx.env.DB)
+    const body = {
+      platform_name: 'Stellar Discord Bot',
+      metadata,
+    };
+    try {
+      await fetch(url, {
+        method: 'PUT',
+        body: JSON.stringify(body),
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      console.log('Pushing successful')
+
+    } catch (e) {
+      // const err = e as GaxiosError;
+      // console.error(e);
+      // console.log(util.inspect(err.response?.data, false, 12));
+      // throw e;
+    }
+  }
+
+  static async getMetadata(discord_user_id: string, data: any, ctx: Context) {
+    // GET/PUT /users/@me/applications/:id/role-connection
+    const url = `https://discord.com/api/v10/users/@me/applications/${config.DISCORD_CLIENT_ID}/role-connection`;
+    const { access_token: accessToken } = await User.findOne('discord_user_id', discord_user_id, ctx.env.DB)
+    const metadata = (await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      }
+    })).json()
+    return metadata;
+    // const accessToken = await getAccessToken(discord_user_id, data);
+    // const res = await request({
+    //   url,
+    //   headers: {
+    //     Authorization: `Bearer ${accessToken}`,
+    //   },
+    // });
+    // return res.data;
   }
 }

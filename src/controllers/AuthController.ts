@@ -3,17 +3,17 @@ import { parse } from 'cookie';
 import { Discord } from '../models'
 import { UserForm } from '../forms/UserForm';
 import { User } from '../models/User';
-import { html } from 'hono/html'
+import { html } from 'hono/html';
 
 
 export class AuthController {
   // STEP 1: User clicks the "Connect with Discord" button
-  static async discord(c: Context) {
+  static async discord(ctx: Context) {
     try {
 			// Set HTTP status code
-			const cookies = parse(c.req.header('Cookie'))
-			const code = c.req.query('code')
-			const discordState = c.req.query('state')
+			const cookies = parse(ctx.req.header('Cookie'))
+			const code = ctx.req.query('code')
+			const discordState = ctx.req.query('state')
       // make sure the state parameter exists
       const { clientState } = cookies;
       console.log('clientState !== discordState', clientState !== discordState)
@@ -28,7 +28,7 @@ export class AuthController {
       const discord_user_id = meData.user.id;
 
 			// store the user data on the db      
-      const userExists = (await User.findBy('discord_user_id', discord_user_id, c.env.DB)).length
+      const userExists = (await User.findBy('discord_user_id', discord_user_id, ctx.env.DB)).length
       // If user does not exist, create it
       if (!Boolean(userExists)) {
         const userForm = new UserForm(new User({
@@ -37,17 +37,17 @@ export class AuthController {
           refresh_token: tokens.refresh_token,
           expires_at: (Date.now() + tokens.expires_in * 1000).toString()
         }))
-        await User.create(userForm, c.env.DB)
+        await User.create(userForm, ctx.env.DB)
       }
 
       // TODO: if user exists, update the access token
       
-      c.status(200)
+      ctx.status(200)
 
       // TODO: Redirect with UUID so we can associate the user with the wallet
 
       // send the user to the Wallet login dialog screen
-			return c.redirect(`/auth/wallet/${discord_user_id}`)
+			return ctx.redirect(`/auth/wallet/${discord_user_id}`)
     } catch (e) {
       // console.error(e);
       // res.sendStatus(500);
@@ -55,9 +55,9 @@ export class AuthController {
   }
 
   // Step 2: User clicks the "Connect with Freighter" button
-  static async wallet(c: Context) {
-    const { discord_user_id } = c.req.param()
-    return c.html(
+  static async wallet(ctx: Context) {
+    const { discord_user_id } = ctx.req.param()
+    return ctx.html(
       html`
         <!DOCTYPE html>
         <head>
@@ -87,10 +87,10 @@ export class AuthController {
     )
   }
   // Step 3: Posts the public key to the server
-  static async account(c: Context) {
-    const { public_key, discord_user_id }: any = await c.req.json()
+  static async account(ctx: Context) {
+    const { public_key, discord_user_id }: any = await ctx.req.json()
 
-    const user = await User.findOne('discord_user_id', discord_user_id, c.env.DB)
+    const user = await User.findOne('discord_user_id', discord_user_id, ctx.env.DB)
     // Fetch the account
     const account: any = await (await fetch(`https://horizon-testnet.stellar.org/accounts/${public_key}`)).json()
     let theAssetToVerify = "MYNT";
@@ -102,21 +102,49 @@ export class AuthController {
       let theobject = account.balances[balances]
       if (theobject.asset_code == theAssetToVerify && theobject.asset_issuer == theIssuerToVerify){
         console.log("the asset has been found!\n", JSON.stringify(account.balances[balances]));
+        let loggingdata = await Discord.getMetadata(discord_user_id, {}, ctx);
+        console.log(loggingdata);
+        console.log(JSON.stringify(loggingdata.metadata));
       };
-    };
-  }  catch(err){
+       
+        // Tier 1 example
+        let metadata = {
+          ambassador: 1,
+          pilot: undefined,
+          captain: undefined,
+         // Tier2: 1
+        //  Tier3: 1
+        }
+        await Discord.pushMetadata(discord_user_id, {}, metadata, ctx)
+      };
+  }  catch(err: any){
     console.error('therewas an error\n', err)
   }
   
-    //await User.update({ id: user.id , public_key: account.id }, c.env.DB)
-    
+    //await User.update({ id: user.id , public_key: account.id }, ctx.env.DB)
+    // 3 test assets
+    //we'll need to register the tests
+    // tier1
+    // tier2
+    // tier3
+    // discord.bot.actions.user.setrole()
+    /*Object {
+      platform_name: Stellar Discord Bot,
+      platform_username: null,
+      metadata: Object
+    }*/
     // TODO: Check for any NFTs on the account
-    
+    //let metadata: ApplicationRoleConnectionMetadataType = {}
+
     // IF NFTs exist, update discord metadata by calling the Discord API
     // use the discord tokens to update the user's profile
-
+    // let metadata = {
+    //   ambassador: {
+    //     type: 7
+    //   }
+    // }
 
     // Redirect to discord
-    return c.json({ message: public_key })
+    return ctx.json({ message: public_key })
   }
 }
