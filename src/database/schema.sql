@@ -5,6 +5,7 @@ CREATE TABLE users (
   discord_user_id text,
   access_token text,
   refresh_token text,
+  public_key text,
   expires_at text,
   deleted_at datetime,
   created_at datetime,

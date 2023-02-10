@@ -4,5 +4,5 @@ export const config = {
   DISCORD_REDIRECT_URI: '',
   DISCORD_BOT_TOKEN: '',
   STELLAR_NETWORK: '',
-  BADGE_ASSET_ADDRESS: ''
+  TIER_1_BADGE_TRUSTLINE: ''
 }

@@ -69,18 +69,22 @@ export class AuthController {
             alert("User has Freighter!");
           }
           function getPublicKey(discord_user_id) {
+            console.log('discord_user_id', discord_user_id)
+
             window.freighterApi.getPublicKey().then((public_key) => {
+              const body = JSON.stringify({ public_key, discord_user_id })
+              console.log('body', body)
               fetch('/auth/account', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ public_key, discord_user_id })
+                body
               })
             })
           }
         </script>
-        <button onclick="getPublicKey(${discord_user_id})">Connect with Freighter</button>
+        <button onclick="getPublicKey('${discord_user_id}')">Connect with Freighter</button>
       `
     )
   }
@@ -88,11 +92,11 @@ export class AuthController {
   static async account(c: Context) {
     const { public_key, discord_user_id }: any = await c.req.json()
 
+    const user = await User.findOne('discord_user_id', discord_user_id, c.env.DB)
     // Fetch the account
-    const account = await (await fetch(`https://horizon-testnet.stellar.org/accounts/${public_key}`)).json()
-    console.log('account', account)
+    const account: any = await (await fetch(`https://horizon-testnet.stellar.org/accounts/${public_key}`)).json()
 
-
+    await User.update({ id: user.id , public_key: account.id }, c.env.DB)
     // TODO: Check for any NFTs on the account
     // IF NFTs exist, update discord metadata by calling the Discord API
     // use the discord tokens to update the user's profile
