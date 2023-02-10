@@ -14,9 +14,9 @@
   "scripts": {
     "start": "wrangler dev",
     "deploy": "wrangler publish",
-    "db:create": "npx wrangler d1 create stellar-bot",
-    "db:schema": "npx wrangler d1 execute stellar-bot --file ./src/database/schema.sql",
-    "db:dump": "npx wrangler d1 execute stellar-bot --file ./src/database/schema.sql",
+    "db:create": "npx wrangler d1 create discord-stellar-roles",
+    "db:schema": "npx wrangler d1 execute discord-stellar-roles --file ./src/database/schema.sql",
+    "db:dump": "npx wrangler d1 execute discord-stellar-roles --file ./src/database/schema.sql",
     "test": "vitest"
   },
   "dependencies": {

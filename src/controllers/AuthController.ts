@@ -65,9 +65,7 @@ export class AuthController {
         </head>
         <script>
           
-          if (window.freighterApi.isConnected()) {
-            alert("User has Freighter!");
-          }
+
           function getPublicKey(discord_user_id) {
             console.log('discord_user_id', discord_user_id)
 
@@ -95,9 +93,25 @@ export class AuthController {
     const user = await User.findOne('discord_user_id', discord_user_id, c.env.DB)
     // Fetch the account
     const account: any = await (await fetch(`https://horizon-testnet.stellar.org/accounts/${public_key}`)).json()
-
-    await User.update({ id: user.id , public_key: account.id }, c.env.DB)
+    let theAssetToVerify = "MYNT";
+    let theIssuerToVerify = "GBPQHGMDPMSG5RY44AD664CVQSFUA7VD432A3DNFUAJSLGPL424W34L3";
+    //[{"MYNT":"GBPQHGMDPMSG5RY44AD664CVQSFUA7VD432A3DNFUAJSLGPL424W34L3"}, {"second":"secondissuer"}, {"etc":"etc"}]
+  console.log(JSON.stringify(account.balances));
+  try{
+    for (let balances in account.balances){
+      let theobject = account.balances[balances]
+      if (theobject.asset_code == theAssetToVerify && theobject.asset_issuer == theIssuerToVerify){
+        console.log("the asset has been found!\n", JSON.stringify(account.balances[balances]));
+      };
+    };
+  }  catch(err){
+    console.error('therewas an error\n', err)
+  }
+  
+    //await User.update({ id: user.id , public_key: account.id }, c.env.DB)
+    
     // TODO: Check for any NFTs on the account
+    
     // IF NFTs exist, update discord metadata by calling the Discord API
     // use the discord tokens to update the user's profile
 
