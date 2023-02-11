@@ -13,7 +13,7 @@ export const metadata =
     "type":7
 },
 {
-    "key":"navigator",
+    "key":"p",
     "name":"Stellar Ambassador",
     "description":"Is a Stellar Ambassador",
     "type":7

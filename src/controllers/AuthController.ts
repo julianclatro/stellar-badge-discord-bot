@@ -4,8 +4,8 @@ import { Discord } from '../models'
 import { UserForm } from '../forms/UserForm';
 import { User } from '../models/User';
 import { html } from 'hono/html';
-
-
+import { IntegrationAccount } from 'discord.js';
+import { Horizon } from './horizon_api'
 export class AuthController {
   // STEP 1: User clicks the "Connect with Discord" button
   static async discord(ctx: Context) {
@@ -26,7 +26,7 @@ export class AuthController {
       // 2. Uses the Discord Access Token to fetch the user profile
       const meData: any = await Discord.getUserData(tokens);
       const discord_user_id = meData.user.id;
-
+      
 			// store the user data on the db      
       const userExists = (await User.findBy('discord_user_id', discord_user_id, ctx.env.DB)).length
       // If user does not exist, create it
@@ -71,7 +71,6 @@ export class AuthController {
 
             window.freighterApi.getPublicKey().then((public_key) => {
               const body = JSON.stringify({ public_key, discord_user_id })
-              console.log('body', body)
               fetch('/auth/account', {
                 method: 'POST',
                 headers: {
@@ -79,6 +78,7 @@ export class AuthController {
                 },
                 body
               })
+              console.log('body', body)
             })
           }
         </script>
@@ -88,62 +88,67 @@ export class AuthController {
   }
   // Step 3: Posts the public key to the server
   static async account(ctx: Context) {
-    const { public_key, discord_user_id }: any = await ctx.req.json()
+    let mainnet=0;
+    let server = "https://horizon-testnet.stellar.org";
+    if(mainnet){let server = "https://horizon.stellar.org"};
+    let theAssets: Array<Array<string>> = [
+      ["Pilot", "GBPQHGMDPMSG5RY44AD664CVQSFUA7VD432A3DNFUAJSLGPL424W34L3"],
+      ["Captain", "GBPQHGMDPMSG5RY44AD664CVQSFUA7VD432A3DNFUAJSLGPL424W34L3"],
+      ["Navigator", "GBPQHGMDPMSG5RY44AD664CVQSFUA7VD432A3DNFUAJSLGPL424W34L3"]
+    ]
+    const { public_key, discord_user_id }: any = await ctx.req.json();
 
     const user = await User.findOne('discord_user_id', discord_user_id, ctx.env.DB)
     // Fetch the account
-    const account: any = await (await fetch(`https://horizon-testnet.stellar.org/accounts/${public_key}`)).json()
-    let theAssetToVerify = "MYNT";
-    let theIssuerToVerify = "GBPQHGMDPMSG5RY44AD664CVQSFUA7VD432A3DNFUAJSLGPL424W34L3";
-    //[{"MYNT":"GBPQHGMDPMSG5RY44AD664CVQSFUA7VD432A3DNFUAJSLGPL424W34L3"}, {"second":"secondissuer"}, {"etc":"etc"}]
-  console.log(JSON.stringify(account.balances));
+    
+    const account: Horizon.AccountResponse = await (await fetch(`${server}/accounts/${public_key}`)).json()
+    const balances: Horizon.BalanceLine[] = account.balances
+    console.log(JSON.stringify(account.balances));
+    // check for the NFT
+   //let metadata = new Map()
+   
+
+   let metadata = {      
+      pilot: 0,
+      captain: 0,
+      navigator: 0,
+    }
+    function updateMetadata(role: string){
+      switch(role){
+        case 'Pilot':
+          console.log('found pilot')
+          metadata.pilot = 1
+        case 'Captain':
+          console.log('found captain')
+          metadata.captain = 1
+        case 'Navigator':
+          console.log('found navigator')
+          metadata.navigator = 1
+      }
+      
+    }
   try{
-    for (let balances in account.balances){
-      let theobject = account.balances[balances]
-      if (theobject.asset_code == theAssetToVerify && theobject.asset_issuer == theIssuerToVerify){
-        console.log("the asset has been found!\n", JSON.stringify(account.balances[balances]));
-        let loggingdata = await Discord.getMetadata(discord_user_id, {}, ctx);
-        console.log(loggingdata);
-        console.log(JSON.stringify(loggingdata.metadata));
-      };
-       
-        // Tier 1 example
-        let metadata = {
-          ambassador: 1,
-          pilot: undefined,
-          captain: undefined,
-         // Tier2: 1
-        //  Tier3: 1
-        }
-        await Discord.pushMetadata(discord_user_id, {}, metadata, ctx)
-      };
-  }  catch(err: any){
+     
+    balances.map(async(balance)=>{
+      for (let asset in theAssets){
+        let AssetCode: string = theAssets[asset][0];
+        let AssetIssuer: string = theAssets[asset][1];
+        console.log(`the asset ${AssetCode}:${AssetIssuer} is being checked against ${JSON.stringify(balance)}\n`)
+        if( balance.asset_code == AssetCode && balance.asset_issuer == AssetIssuer ){
+          console.log(`i found the ${AssetCode}:${AssetIssuer} in account ${public_key}`)
+          updateMetadata(AssetCode)
+        }else{
+          
+        }}
+      });
+
+      
+      console.log(JSON.stringify(metadata))
+    await Discord.pushMetadata(discord_user_id, {}, metadata, ctx)
+    }
+  catch(err: any){
     console.error('therewas an error\n', err)
   }
-  
-    //await User.update({ id: user.id , public_key: account.id }, ctx.env.DB)
-    // 3 test assets
-    //we'll need to register the tests
-    // tier1
-    // tier2
-    // tier3
-    // discord.bot.actions.user.setrole()
-    /*Object {
-      platform_name: Stellar Discord Bot,
-      platform_username: null,
-      metadata: Object
-    }*/
-    // TODO: Check for any NFTs on the account
-    //let metadata: ApplicationRoleConnectionMetadataType = {}
-
-    // IF NFTs exist, update discord metadata by calling the Discord API
-    // use the discord tokens to update the user's profile
-    // let metadata = {
-    //   ambassador: {
-    //     type: 7
-    //   }
-    // }
-
     // Redirect to discord
     return ctx.json({ message: public_key })
   }

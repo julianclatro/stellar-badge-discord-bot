@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20230115.0",
+    "@stellar/tsconfig": "^1.0.2",
     "@types/cookie": "^0.5.1",
     "joi": "^17.7.0",
     "model-one": "^0.0.7",
@@ -22,6 +23,7 @@
   "dependencies": {
     "discord.js": "^14.7.1",
     "hono": "^2.7.6",
+    "stellar-base": "^8.2.2",
     "stellar-wallets-kit": "github:Creit-Tech/Stellar-Wallets-Kit"
   }
 }

@@ -64,11 +64,12 @@ description_localizations?	dictionary with keys in available locales	translation
   static async pushMetadata(
     discord_user_id: string,
     data: any, // inside the data object goes the refresh_token, TODO
-    metadata: Record<string, string>,
+    metadata: {pilot: number, captain: number, navigator: number},
     ctx: Context
   ) {
 
     console.log('Pushing metadata to discord')
+    console.log(metadata)
     // GET/PUT /users/@me/applications/:id/role-connection
     const url = `https://discord.com/api/v10/users/@me/applications/${config.DISCORD_CLIENT_ID}/role-connection`;
     // const accessToken = await getAccessToken(discord_user_id, data);

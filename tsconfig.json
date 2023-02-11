@@ -36,7 +36,8 @@
 		"types": [
 			"@cloudflare/workers-types",
 			"vitest",
-			"discord"
+			"discord",
+			"stellar-sdk"
 
 		] /* Specify type package names to be included without being referenced in a source file. */,
 		// "allowUmdGlobalAccess": true,                     /* Allow accessing UMD globals from modules. */
