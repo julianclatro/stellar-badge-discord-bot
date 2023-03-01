@@ -11,6 +11,7 @@ export class AuthController {
   static async discord(ctx: Context) {
     try {
 			// Set HTTP status code
+      console.log(ctx)
 			const cookies = parse(ctx.req.header('Cookie'))
 			const code = ctx.req.query('code')
 			const discordState = ctx.req.query('state')
@@ -21,12 +22,12 @@ export class AuthController {
         console.error('State verification failed.');
         // return res.sendStatus(403);
       }
-  
       const tokens: any = await Discord.getOAuthTokens(code);  
+      console.log('tokens', tokens)
       // 2. Uses the Discord Access Token to fetch the user profile
       const meData: any = await Discord.getUserData(tokens);
+      console.log('meData', meData)
       const discord_user_id = meData.user.id;
-      
 			// store the user data on the db      
       const userExists = (await User.findBy('discord_user_id', discord_user_id, ctx.env.DB)).length
       // If user does not exist, create it
@@ -105,9 +106,6 @@ export class AuthController {
     const balances: Horizon.BalanceLine[] = account.balances
     console.log(JSON.stringify(account.balances));
     // check for the NFT
-   //let metadata = new Map()
-   
-
    let metadata = {      
       pilot: 0,
       captain: 0,
@@ -125,10 +123,8 @@ export class AuthController {
           console.log('found navigator')
           metadata.navigator = 1
       }
-      
     }
   try{
-     
     balances.map(async(balance)=>{
       for (let asset in theAssets){
         let AssetCode: string = theAssets[asset][0];
@@ -153,3 +149,20 @@ export class AuthController {
     return ctx.json({ message: public_key })
   }
 }
+/*remove a uuser
+  static async deauthaccount(ctx: Context){
+    const { discord_user_id } = ctx.req.param()
+    let metadata = {      
+      pilot: 0,
+      captain: 0,
+      navigator: 0,
+    }
+    try{
+      console.log(discord_user_id)
+     await Discord.pushMetadata(discord_user_id, {}, metadata, ctx)
+    } catch(err){
+      console.error('there was a fuckup\n', err)
+    }
+  }
+}
+*/

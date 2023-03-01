@@ -36,7 +36,6 @@
 		"types": [
 			"@cloudflare/workers-types",
 			"vitest",
-			"discord",
 			"stellar-sdk"
 
 		] /* Specify type package names to be included without being referenced in a source file. */,
