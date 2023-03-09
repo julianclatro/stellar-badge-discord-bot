@@ -8,9 +8,7 @@ export let loader: LoaderFunction = async ({
     context,
   }) => {
     const { url, state } = await Discord.getOAuthUrl();
-    console.log('url', url)
-
-    redirect(url, {
+    return redirect(url, {
         status: 301,
         headers: {
           "Set-Cookie": `clientState=${state}; Max-Age=300000;}`,

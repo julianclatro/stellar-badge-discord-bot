@@ -14,5 +14,4 @@ export const loader = async () => {
 
 export default function AuthRoute() {
   return <Outlet />
-  // return json({"auth route"}
 }
