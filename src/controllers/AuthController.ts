@@ -3,17 +3,18 @@ import { parse } from 'cookie';
 import { Discord } from '../models'
 import { UserForm } from '../forms/UserForm';
 import { User } from '../models/User';
-import { html } from 'hono/html'
-
-
+import { html } from 'hono/html';
+import { IntegrationAccount } from 'discord.js';
+import { Horizon } from './horizon_api'
 export class AuthController {
   // STEP 1: User clicks the "Connect with Discord" button
-  static async discord(c: Context) {
+  static async discord(ctx: Context) {
     try {
 			// Set HTTP status code
-			const cookies = parse(c.req.header('Cookie'))
-			const code = c.req.query('code')
-			const discordState = c.req.query('state')
+      console.log(ctx)
+			const cookies = parse(ctx.req.header('Cookie'))
+			const code = ctx.req.query('code')
+			const discordState = ctx.req.query('state')
       // make sure the state parameter exists
       const { clientState } = cookies;
       console.log('clientState !== discordState', clientState !== discordState)
@@ -21,14 +22,14 @@ export class AuthController {
         console.error('State verification failed.');
         // return res.sendStatus(403);
       }
-  
       const tokens: any = await Discord.getOAuthTokens(code);  
+      console.log('tokens', tokens)
       // 2. Uses the Discord Access Token to fetch the user profile
       const meData: any = await Discord.getUserData(tokens);
+      console.log('meData', meData)
       const discord_user_id = meData.user.id;
-
 			// store the user data on the db      
-      const userExists = (await User.findBy('discord_user_id', discord_user_id, c.env.DB)).length
+      const userExists = (await User.findBy('discord_user_id', discord_user_id, ctx.env.DB)).length
       // If user does not exist, create it
       if (!Boolean(userExists)) {
         const userForm = new UserForm(new User({
@@ -37,17 +38,17 @@ export class AuthController {
           refresh_token: tokens.refresh_token,
           expires_at: (Date.now() + tokens.expires_in * 1000).toString()
         }))
-        await User.create(userForm, c.env.DB)
+        await User.create(userForm, ctx.env.DB)
       }
 
       // TODO: if user exists, update the access token
       
-      c.status(200)
+      ctx.status(200)
 
       // TODO: Redirect with UUID so we can associate the user with the wallet
 
       // send the user to the Wallet login dialog screen
-			return c.redirect(`/auth/wallet/${discord_user_id}`)
+			return ctx.redirect(`/auth/wallet/${discord_user_id}`)
     } catch (e) {
       // console.error(e);
       // res.sendStatus(500);
@@ -55,9 +56,9 @@ export class AuthController {
   }
 
   // Step 2: User clicks the "Connect with Freighter" button
-  static async wallet(c: Context) {
-    const { discord_user_id } = c.req.param()
-    return c.html(
+  static async wallet(ctx: Context) {
+    const { discord_user_id } = ctx.req.param()
+    return ctx.html(
       html`
         <!DOCTYPE html>
         <head>
@@ -65,15 +66,12 @@ export class AuthController {
         </head>
         <script>
           
-          if (window.freighterApi.isConnected()) {
-            alert("User has Freighter!");
-          }
+
           function getPublicKey(discord_user_id) {
             console.log('discord_user_id', discord_user_id)
 
             window.freighterApi.getPublicKey().then((public_key) => {
               const body = JSON.stringify({ public_key, discord_user_id })
-              console.log('body', body)
               fetch('/auth/account', {
                 method: 'POST',
                 headers: {
@@ -81,6 +79,7 @@ export class AuthController {
                 },
                 body
               })
+              console.log('body', body)
             })
           }
         </script>
@@ -89,20 +88,81 @@ export class AuthController {
     )
   }
   // Step 3: Posts the public key to the server
-  static async account(c: Context) {
-    const { public_key, discord_user_id }: any = await c.req.json()
+  static async account(ctx: Context) {
+    let mainnet=0;
+    let server = "https://horizon-testnet.stellar.org";
+    if(mainnet){let server = "https://horizon.stellar.org"};
+    let theAssets: Array<Array<string>> = [
+      ["Pilot", "GBPQHGMDPMSG5RY44AD664CVQSFUA7VD432A3DNFUAJSLGPL424W34L3"],
+      ["Captain", "GBPQHGMDPMSG5RY44AD664CVQSFUA7VD432A3DNFUAJSLGPL424W34L3"],
+      ["Navigator", "GBPQHGMDPMSG5RY44AD664CVQSFUA7VD432A3DNFUAJSLGPL424W34L3"]
+    ]
+    const { public_key, discord_user_id }: any = await ctx.req.json();
 
-    const user = await User.findOne('discord_user_id', discord_user_id, c.env.DB)
+    const user = await User.findOne('discord_user_id', discord_user_id, ctx.env.DB)
     // Fetch the account
-    const account: any = await (await fetch(`https://horizon-testnet.stellar.org/accounts/${public_key}`)).json()
+    
+    const account: Horizon.AccountResponse = await (await fetch(`${server}/accounts/${public_key}`)).json()
+    const balances: Horizon.BalanceLine[] = account.balances
+    console.log(JSON.stringify(account.balances));
+    // check for the NFT
+   let metadata = {      
+      pilot: 0,
+      captain: 0,
+      navigator: 0,
+    }
+    function updateMetadata(role: string){
+      switch(role){
+        case 'Pilot':
+          console.log('found pilot')
+          metadata.pilot = 1
+        case 'Captain':
+          console.log('found captain')
+          metadata.captain = 1
+        case 'Navigator':
+          console.log('found navigator')
+          metadata.navigator = 1
+      }
+    }
+  try{
+    balances.map(async(balance)=>{
+      for (let asset in theAssets){
+        let AssetCode: string = theAssets[asset][0];
+        let AssetIssuer: string = theAssets[asset][1];
+        console.log(`the asset ${AssetCode}:${AssetIssuer} is being checked against ${JSON.stringify(balance)}\n`)
+        if( balance.asset_code == AssetCode && balance.asset_issuer == AssetIssuer ){
+          console.log(`i found the ${AssetCode}:${AssetIssuer} in account ${public_key}`)
+          updateMetadata(AssetCode)
+        }else{
+          
+        }}
+      });
 
-    await User.update({ id: user.id , public_key: account.id }, c.env.DB)
-    // TODO: Check for any NFTs on the account
-    // IF NFTs exist, update discord metadata by calling the Discord API
-    // use the discord tokens to update the user's profile
-
-
+      
+      console.log(JSON.stringify(metadata))
+    await Discord.pushMetadata(discord_user_id, {}, metadata, ctx)
+    }
+  catch(err: any){
+    console.error('therewas an error\n', err)
+  }
     // Redirect to discord
-    return c.json({ message: public_key })
+    return ctx.json({ message: public_key })
   }
 }
+/*remove a uuser
+  static async deauthaccount(ctx: Context){
+    const { discord_user_id } = ctx.req.param()
+    let metadata = {      
+      pilot: 0,
+      captain: 0,
+      navigator: 0,
+    }
+    try{
+      console.log(discord_user_id)
+     await Discord.pushMetadata(discord_user_id, {}, metadata, ctx)
+    } catch(err){
+      console.error('there was a fuckup\n', err)
+    }
+  }
+}
+*/

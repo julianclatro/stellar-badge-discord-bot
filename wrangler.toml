@@ -1,9 +1,10 @@
 name = "stellar-badge-discord-bot"
 main = "src/index.ts"
 compatibility_date = "2023-02-08"
+NO_D1_WARNING=true
 
 [[ d1_databases ]]
 binding = "DB" # i.e. available in your Worker on env.DB
-database_name = ""
-database_id = ""
-preview_database_id = ""
+database_name = "discord-stellar-roles"
+database_id = "fb84e321-ab0e-4bd2-864e-75007649a9ef"
+preview_database_id = "fb84e321-ab0e-4bd2-864e-75007649a9ef"

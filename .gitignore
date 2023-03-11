@@ -1,3 +1,4 @@
+/my-remix-page/app/config.ts
 # Logs
 
 logs
@@ -169,3 +170,6 @@ dist
 # wrangler project
 
 .dev.vars
+wrangler.toml
+src/config.ts
+sampleaccountobj.json

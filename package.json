@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20230115.0",
+    "@stellar/tsconfig": "^1.0.2",
     "@types/cookie": "^0.5.1",
     "joi": "^17.7.0",
     "model-one": "^0.0.7",
@@ -14,12 +15,15 @@
   "scripts": {
     "start": "wrangler dev",
     "deploy": "wrangler publish",
-    "db:create": "npx wrangler d1 create stellar-bot",
-    "db:schema": "npx wrangler d1 execute stellar-bot --file ./src/database/schema.sql",
-    "db:dump": "npx wrangler d1 execute stellar-bot --file ./src/database/schema.sql",
+    "db:create": "npx wrangler d1 create discord-stellar-roles",
+    "db:schema": "npx wrangler d1 execute discord-stellar-roles --file ./src/database/schema.sql",
+    "db:dump": "npx wrangler d1 execute discord-stellar-roles --file ./src/database/schema.sql",
     "test": "vitest"
   },
   "dependencies": {
-    "hono": "^2.7.6"
+    "discord.js": "^14.7.1",
+    "hono": "^2.7.6",
+    "stellar-base": "^8.2.2",
+    "stellar-wallets-kit": "github:Creit-Tech/Stellar-Wallets-Kit"
   }
 }

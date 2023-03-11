@@ -1,0 +1,7 @@
+node_modules
+wrangler.toml
+/.cache
+/functions/\[\[path\]\].js
+/functions/\[\[path\]\].js.map
+/public/build
+.env
