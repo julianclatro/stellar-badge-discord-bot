@@ -7,7 +7,7 @@ export let loader: LoaderFunction = async ({
     request,
     context,
   }) => {
-    const { url, state } = await Discord.getOAuthUrl();
+    const { url, state } = await Discord.getOAuthUrl(context.env);
     return redirect(url, {
         status: 301,
         headers: {

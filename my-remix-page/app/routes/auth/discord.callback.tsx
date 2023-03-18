@@ -31,7 +31,7 @@ export const loader: LoaderFunction = async ({ context, request, params }: Loade
     // console.error('State verification failed.');
     // // return res.sendStatus(403);
     // }
-    // const tokens: any = await Discord.getOAuthTokens(code);  
+    // const tokens: any = await Discord.getOAuthTokens(code, context.env);  
     // // 2. Uses the Discord Access Token to fetch the user profile
     // const meData: any = await Discord.getUserData(tokens);
     // const discord_user_id = meData.user.id;
@@ -57,6 +57,7 @@ export const loader: LoaderFunction = async ({ context, request, params }: Loade
     //   return redirect(`/auth/wallet/${discord_user_id}`, {
     //       status: 200,
     //   });
+      return null
     } catch (e) {
       return null
     }
